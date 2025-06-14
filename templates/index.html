@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Planetary Simulation</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #controls { margin-bottom: 20px; text-align: center; }
+        .slider-label { display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        .color-dot {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .blue-dot { background: #1E90FF; }
+        .yellow-dot { background: #FFD700; }
+        .slider-value { width: 40px; display: inline-block; text-align: left; margin-left: 8px; }
+        canvas { background: #000; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <form id="massForm">
+            <div class="slider-label">
+                <span class="color-dot blue-dot"></span>
+                <label for="massBlue">Blue Mass:</label>
+                <input type="range" id="massBlue" min="1" max="1000" value="5">
+                <span id="blueValue" class="slider-value">5</span>
+            </div>
+            <div class="slider-label">
+                <span class="color-dot yellow-dot"></span>
+                <label for="massYellow">Yellow Mass:</label>
+                <input type="range" id="massYellow" min="1" max="1000" value="5">
+                <span id="yellowValue" class="slider-value">5</span>
+            </div>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+    <canvas id="simCanvas" width="600" height="400"></canvas>
+    <script>
+        const form = document.getElementById('massForm');
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const massBlueSlider = document.getElementById('massBlue');
+        const massYellowSlider = document.getElementById('massYellow');
+        const blueValue = document.getElementById('blueValue');
+        const yellowValue = document.getElementById('yellowValue');
+        let massBlue = parseFloat(massBlueSlider.value);
+        let massYellow = parseFloat(massYellowSlider.value);
+
+        // Update slider values live
+        massBlueSlider.oninput = () => {
+            blueValue.textContent = massBlueSlider.value;
+        };
+        massYellowSlider.oninput = () => {
+            yellowValue.textContent = massYellowSlider.value;
+        };
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            massBlue = parseFloat(massBlueSlider.value);
+            massYellow = parseFloat(massYellowSlider.value);
+            // Optionally send to backend
+            await fetch('/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ masses: [massBlue, massYellow] })
+            });
+        };
+
+        // Simple 2-body orbit simulation (circular for demo)
+        let angle = 0;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Center of mass
+            let totalMass = massBlue + massYellow;
+            let rBlue = 100 * massYellow / totalMass;
+            let rYellow = 100 * massBlue / totalMass;
+            let cx = canvas.width / 2;
+            let cy = canvas.height / 2;
+            // Positions
+            let xBlue = cx + rBlue * Math.cos(angle);
+            let yBlue = cy + rBlue * Math.sin(angle);
+            let xYellow = cx - rYellow * Math.cos(angle);
+            let yYellow = cy - rYellow * Math.sin(angle);
+            // Draw Blue planet
+            ctx.beginPath();
+            ctx.arc(xBlue, yBlue, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1E90FF';
+            let x1 = cx + r1 * Math.cos(angle);
+            let y1 = cy + r1 * Math.sin(angle);
+            let x2 = cx - r2 * Math.cos(angle);
+            let y2 = cy - r2 * Math.sin(angle);
+            // Draw planets
+            ctx.beginPath();
+            ctx.arc(x1, y1, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x2, y2, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1E90FF';
+            ctx.fill();
+            // Draw orbits
+            ctx.beginPath();
+            ctx.arc(cx, cy, r1, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#FFD70044';
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r2, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#1E90FF44';
+            ctx.stroke();
+            // Update angle
+            angle += 0.01 * Math.sqrt((mass1 + mass2) / totalMass);
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html> 
