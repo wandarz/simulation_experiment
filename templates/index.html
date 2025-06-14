@@ -21,35 +21,61 @@
     </style>
 </head>
 <body>
-    <div id="controls">
-        <form id="massForm">
-            <div class="slider-label">
-                <span class="color-dot blue-dot"></span>
-                <label for="massBlue">Blue Mass:</label>
-                <input type="range" id="massBlue" min="1" max="1000" value="5">
-                <span id="blueValue" class="slider-value">5</span>
+    <div style="display: flex; flex-direction: row; justify-content: flex-start; align-items: flex-start;">
+        <div id="controls" style="min-width: 350px; max-width: 400px; margin-right: 30px; text-align: left; background: #f5f5f5; border-radius: 12px; box-shadow: 0 2px 8px #0002; padding: 28px 28px 18px 28px; margin-top: 10px; color: #222;">
+            <form id="massForm">
+                <div class="slider-label">
+                    <label for="simTime">Simulation Time (s):</label>
+                    <input type="range" id="simTime" min="1" max="10000" value="20">
+                    <span id="simTimeValue" class="slider-value">20</span>
+                </div>
+                <div class="slider-label">
+                    <span class="color-dot blue-dot"></span>
+                    <label for="massBlue">Blue Mass:</label>
+                    <input type="range" id="massBlue" min="1" max="1000" value="5">
+                    <span id="blueValue" class="slider-value">5</span>
+                </div>
+                <div class="slider-label">
+                    <span class="color-dot yellow-dot"></span>
+                    <label for="massYellow">Yellow Mass:</label>
+                    <input type="range" id="massYellow" min="1" max="1000" value="5">
+                    <span id="yellowValue" class="slider-value">5</span>
+                </div>
+                <div class="slider-label">
+                    <span class="color-dot blue-dot"></span>
+                    <label for="velBlue">Blue Initial Velocity:</label>
+                    <input type="range" id="velBlue" min="0" max="5" value="1" step="0.01">
+                    <span id="blueVelValue" class="slider-value">1.00</span>
+                    <span style="margin-left:20px;">Direction:</span>
+                    <canvas id="compassBlue" width="60" height="60" style="background:#222; border-radius:50%; margin-left:10px; cursor:pointer;"></canvas>
+                    <span id="blueAngleValue" class="slider-value">90</span>
+                </div>
+                <div class="slider-label">
+                    <span class="color-dot yellow-dot"></span>
+                    <label for="velYellow">Yellow Initial Velocity:</label>
+                    <input type="range" id="velYellow" min="0" max="5" value="1" step="0.01">
+                    <span id="yellowVelValue" class="slider-value">1.00</span>
+                    <span style="margin-left:20px;">Direction:</span>
+                    <canvas id="compassYellow" width="60" height="60" style="background:#222; border-radius:50%; margin-left:10px; cursor:pointer;"></canvas>
+                    <span id="yellowAngleValue" class="slider-value">270</span>
+                </div>
+            </form>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <div style="width:600px; display: flex; flex-direction: row; align-items: center; margin-bottom: 4px;">
+                <button id="zoomOutBtn" style="margin-right: 8px;">-</button>
+                <button id="zoomInBtn" style="margin-right: 16px;">+</button>
+                <span id="zoomLevelLabel" style="color:#333; font-size: 15px;">Zoom: 1x</span>
             </div>
-            <div class="slider-label">
-                <span class="color-dot yellow-dot"></span>
-                <label for="massYellow">Yellow Mass:</label>
-                <input type="range" id="massYellow" min="1" max="1000" value="5">
-                <span id="yellowValue" class="slider-value">5</span>
+            <canvas id="simCanvas" width="600" height="400" style="margin-bottom: 10px;"></canvas>
+            <div style="width:600px;">
+                <div id="distanceGraphPlotly" style="width:600px; height:180px; background:#111; margin-top:10px;"></div>
+                <div id="vxGraphPlotly" style="width:600px; height:140px; background:#111; margin-top:18px;"></div>
+                <div id="vyGraphPlotly" style="width:600px; height:140px; background:#111; margin-top:18px;"></div>
             </div>
-            <div class="slider-label">
-                <span class="color-dot blue-dot"></span>
-                <label for="velBlue">Blue Initial Velocity:</label>
-                <input type="range" id="velBlue" min="-5" max="5" value="1" step="0.01">
-                <span id="blueVelValue" class="slider-value">1.00</span>
-            </div>
-            <div class="slider-label">
-                <span class="color-dot yellow-dot"></span>
-                <label for="velYellow">Yellow Initial Velocity:</label>
-                <input type="range" id="velYellow" min="-5" max="5" value="-1" step="0.01">
-                <span id="yellowVelValue" class="slider-value">-1.00</span>
-            </div>
-        </form>
+        </div>
     </div>
-    <canvas id="simCanvas" width="600" height="400"></canvas>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
@@ -61,10 +87,28 @@
         const yellowVelSlider = document.getElementById('velYellow');
         const blueVelValue = document.getElementById('blueVelValue');
         const yellowVelValue = document.getElementById('yellowVelValue');
+        const simTimeSlider = document.getElementById('simTime');
+        const simTimeValue = document.getElementById('simTimeValue');
+        const compassBlue = document.getElementById('compassBlue');
+        const compassYellow = document.getElementById('compassYellow');
+        const blueAngleValue = document.getElementById('blueAngleValue');
+        const yellowAngleValue = document.getElementById('yellowAngleValue');
+        const distanceGraphDiv = document.getElementById('distanceGraphPlotly');
+        const vxGraphDiv = document.getElementById('vxGraphPlotly');
+        const vyGraphDiv = document.getElementById('vyGraphPlotly');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomLevelLabel = document.getElementById('zoomLevelLabel');
         let massBlue = parseFloat(massBlueSlider.value);
         let massYellow = parseFloat(massYellowSlider.value);
         let velBlue = parseFloat(blueVelSlider.value);
         let velYellow = parseFloat(yellowVelSlider.value);
+        let simTime = parseFloat(simTimeSlider.value);
+        let angleBlue = 90;
+        let angleYellow = 270;
+        let zoom = 1;
+        const minZoom = 0.2;
+        const maxZoom = 5;
 
         // Trajectory data
         let simData = null;
@@ -76,14 +120,22 @@
             massYellow = parseFloat(massYellowSlider.value);
             velBlue = parseFloat(blueVelSlider.value);
             velYellow = parseFloat(yellowVelSlider.value);
+            simTime = parseFloat(simTimeSlider.value);
             const response = await fetch('/simulate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ masses: [massBlue, massYellow], velocities: [velBlue, velYellow] })
+                body: JSON.stringify({
+                    masses: [massBlue, massYellow],
+                    velocities: [velBlue, velYellow],
+                    velocity_angles: [angleBlue, angleYellow],
+                    time_interval: simTime
+                })
             });
             simData = await response.json();
             frame = 0;
             nFrames = simData.t.length;
+            blueTrail = [];
+            yellowTrail = [];
         }
 
         // Attach fetchSimulation to all slider inputs
@@ -103,21 +155,130 @@
             yellowVelValue.textContent = parseFloat(yellowVelSlider.value).toFixed(2);
             fetchSimulation();
         };
+        simTimeSlider.oninput = () => {
+            simTimeValue.textContent = simTimeSlider.value;
+            fetchSimulation();
+        };
 
+        // Compass rose/arrow widget logic
+        function drawCompass(compass, angle, color) {
+            const ctx = compass.getContext('2d');
+            ctx.clearRect(0, 0, 60, 60);
+            ctx.save();
+            ctx.translate(30, 30);
+            ctx.strokeStyle = '#888';
+            ctx.beginPath();
+            ctx.arc(0, 0, 28, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Draw arrow
+            ctx.rotate((angle-90) * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -22);
+            ctx.lineTo(-5, -14);
+            ctx.moveTo(0, -22);
+            ctx.lineTo(5, -14);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+        function setupCompass(compass, getAngle, setAngle, color, angleValueElem) {
+            let dragging = false;
+            compass.addEventListener('mousedown', (e) => {
+                dragging = true;
+                updateAngle(e);
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (dragging) updateAngle(e);
+            });
+            window.addEventListener('mouseup', () => {
+                if (dragging) { dragging = false; fetchSimulation(); }
+            });
+            function updateAngle(e) {
+                const rect = compass.getBoundingClientRect();
+                const x = e.clientX - rect.left - 30;
+                const y = e.clientY - rect.top - 30;
+                let ang = Math.atan2(y, x) * 180 / Math.PI;
+                ang = (ang + 450) % 360; // 0 is up
+                setAngle(ang);
+                angleValueElem.textContent = Math.round(ang);
+                drawCompass(compass, ang, color);
+            }
+            drawCompass(compass, getAngle(), color);
+        }
+        setupCompass(compassBlue, () => angleBlue, a => { angleBlue = a; }, '#1E90FF', blueAngleValue);
+        setupCompass(compassYellow, () => angleYellow, a => { angleYellow = a; }, '#FFD700', yellowAngleValue);
+
+        // Trails
+        let blueTrail = [];
+        let yellowTrail = [];
+        let distanceHistory = [];
+        let vx1History = [], vy1History = [], vx2History = [], vy2History = [];
+        let plotlyInitialized = false;
+        let plotlyVxInitialized = false;
+        let plotlyVyInitialized = false;
+        zoomInBtn.onclick = () => { zoom = Math.min(maxZoom, zoom * 1.2); updateZoomLabel(); };
+        zoomOutBtn.onclick = () => { zoom = Math.max(minZoom, zoom / 1.2); updateZoomLabel(); };
+        function updateZoomLabel() {
+            zoomLevelLabel.textContent = `Zoom: ${zoom.toFixed(2)}x`;
+        }
+        updateZoomLabel();
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) zoom = Math.min(maxZoom, zoom * 1.1);
+            else zoom = Math.max(minZoom, zoom / 1.1);
+            updateZoomLabel();
+        });
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (simData) {
-                // Center the system in the canvas
+                // Center and zoom
                 const cx = canvas.width / 2;
                 const cy = canvas.height / 2;
-                // Get positions for this frame
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(zoom, zoom);
+                ctx.translate(-cx, -cy);
                 const x1 = simData.x1[frame];
                 const y1 = simData.y1[frame];
                 const x2 = simData.x2[frame];
                 const y2 = simData.y2[frame];
-                // Calculate radii based on mass (sqrt for visibility, clamp between 10 and 40)
                 let blueRadius = Math.max(10, Math.min(40, Math.sqrt(massBlue) * 2));
                 let yellowRadius = Math.max(10, Math.min(40, Math.sqrt(massYellow) * 2));
+                // Add to trails (persist for whole simulation)
+                if (frame === 0) {
+                    blueTrail = [];
+                    yellowTrail = [];
+                    distanceHistory = [];
+                    vx1History = [];
+                    vy1History = [];
+                    vx2History = [];
+                    vy2History = [];
+                    plotlyInitialized = false;
+                    plotlyVxInitialized = false;
+                    plotlyVyInitialized = false;
+                }
+                blueTrail.push([cx + x1, cy + y1]);
+                yellowTrail.push([cx + x2, cy + y2]);
+                // Draw trails
+                ctx.beginPath();
+                for (let i = 0; i < blueTrail.length; i++) {
+                    const [x, y] = blueTrail[i];
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#1E90FF88';
+                ctx.lineWidth = 2 / zoom;
+                ctx.stroke();
+                ctx.beginPath();
+                for (let i = 0; i < yellowTrail.length; i++) {
+                    const [x, y] = yellowTrail[i];
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#FFD70088';
+                ctx.lineWidth = 2 / zoom;
+                ctx.stroke();
                 // Draw Blue planet
                 ctx.beginPath();
                 ctx.arc(cx + x1, cy + y1, blueRadius, 0, 2 * Math.PI);
@@ -128,21 +289,158 @@
                 ctx.arc(cx + x2, cy + y2, yellowRadius, 0, 2 * Math.PI);
                 ctx.fillStyle = '#FFD700';
                 ctx.fill();
-                // Optionally: draw velocity vectors
-                /*
+                // Update distance and velocity histories
+                let dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                distanceHistory.push(dist);
+                vx1History.push(simData.vx1[frame]);
+                vy1History.push(simData.vy1[frame]);
+                vx2History.push(simData.vx2[frame]);
+                vy2History.push(simData.vy2[frame]);
+                // Draw Plotly distance graph
+                let t = simData.t.slice(0, distanceHistory.length);
+                let trace = {
+                    x: t,
+                    y: distanceHistory,
+                    mode: 'lines',
+                    line: {color: '#1f77b4', width: 3},
+                    name: 'Distance',
+                };
+                let layout = {
+                    paper_bgcolor: '#111',
+                    plot_bgcolor: '#111',
+                    margin: {l: 50, r: 20, t: 20, b: 40},
+                    xaxis: {
+                        title: 'Time (s)',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                        range: [0, simData.t[simData.t.length-1]],
+                    },
+                    yaxis: {
+                        title: 'Distance',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                    },
+                    font: {color: '#fff'},
+                };
+                if (!plotlyInitialized) {
+                    Plotly.newPlot(distanceGraphDiv, [trace], layout, {displayModeBar: false});
+                    plotlyInitialized = true;
+                } else {
+                    Plotly.update(distanceGraphDiv, {x: [t], y: [distanceHistory]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+                }
+                // Draw Plotly vx graph
+                let traceVx1 = {
+                    x: t, y: vx1History, mode: 'lines', line: {color: '#1f77b4', width: 2}, name: 'Blue vx',
+                };
+                let traceVx2 = {
+                    x: t, y: vx2History, mode: 'lines', line: {color: '#FFD700', width: 2}, name: 'Yellow vx',
+                };
+                let layoutVx = {
+                    paper_bgcolor: '#111',
+                    plot_bgcolor: '#111',
+                    margin: {l: 50, r: 20, t: 20, b: 40},
+                    xaxis: {
+                        title: 'Time (s)',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                        range: [0, simData.t[simData.t.length-1]],
+                    },
+                    yaxis: {
+                        title: 'vx',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                    },
+                    font: {color: '#fff'},
+                    legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}},
+                };
+                if (!plotlyVxInitialized) {
+                    Plotly.newPlot(vxGraphDiv, [traceVx1, traceVx2], layoutVx, {displayModeBar: false});
+                    plotlyVxInitialized = true;
+                } else {
+                    Plotly.update(vxGraphDiv, {x: [t, t], y: [vx1History, vx2History]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+                }
+                // Draw Plotly vy graph
+                let traceVy1 = {
+                    x: t, y: vy1History, mode: 'lines', line: {color: '#1f77b4', width: 2}, name: 'Blue vy',
+                };
+                let traceVy2 = {
+                    x: t, y: vy2History, mode: 'lines', line: {color: '#FFD700', width: 2}, name: 'Yellow vy',
+                };
+                let layoutVy = {
+                    paper_bgcolor: '#111',
+                    plot_bgcolor: '#111',
+                    margin: {l: 50, r: 20, t: 20, b: 40},
+                    xaxis: {
+                        title: 'Time (s)',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                        range: [0, simData.t[simData.t.length-1]],
+                    },
+                    yaxis: {
+                        title: 'vy',
+                        color: '#fff',
+                        gridcolor: '#444',
+                        tickcolor: '#fff',
+                        zeroline: false,
+                        showgrid: true,
+                        showline: true,
+                        linecolor: '#888',
+                        tickfont: {color: '#fff'},
+                    },
+                    font: {color: '#fff'},
+                    legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}},
+                };
+                if (!plotlyVyInitialized) {
+                    Plotly.newPlot(vyGraphDiv, [traceVy1, traceVy2], layoutVy, {displayModeBar: false});
+                    plotlyVyInitialized = true;
+                } else {
+                    Plotly.update(vyGraphDiv, {x: [t, t], y: [vy1History, vy2History]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+                }
+                // Draw scale indicator (100 units)
+                ctx.save();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(cx + x1, cy + y1);
-                ctx.lineTo(cx + x1 + simData.vx1[frame]*5, cy + y1 + simData.vy1[frame]*5);
-                ctx.strokeStyle = '#1E90FF';
+                ctx.moveTo(40, canvas.height - 30);
+                ctx.lineTo(140, canvas.height - 30);
                 ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(cx + x2, cy + y2);
-                ctx.lineTo(cx + x2 + simData.vx2[frame]*5, cy + y2 + simData.vy2[frame]*5);
-                ctx.strokeStyle = '#FFD700';
-                ctx.stroke();
-                */
+                ctx.font = '15px Arial';
+                ctx.fillStyle = '#333';
+                ctx.fillText(`${Math.round(100 / zoom)} units`, 60, canvas.height - 38);
+                ctx.restore();
                 // Advance frame
                 frame = (frame + 1) % nFrames;
+                ctx.restore();
             }
             requestAnimationFrame(draw);
         }
