@@ -35,86 +35,120 @@
                 <input type="range" id="massYellow" min="1" max="1000" value="5">
                 <span id="yellowValue" class="slider-value">5</span>
             </div>
-            <button type="submit">Update</button>
+            <div class="slider-label">
+                <span class="color-dot blue-dot"></span>
+                <label for="velBlue">Blue Initial Velocity:</label>
+                <input type="range" id="velBlue" min="-5" max="5" value="1" step="0.01">
+                <span id="blueVelValue" class="slider-value">1.00</span>
+            </div>
+            <div class="slider-label">
+                <span class="color-dot yellow-dot"></span>
+                <label for="velYellow">Yellow Initial Velocity:</label>
+                <input type="range" id="velYellow" min="-5" max="5" value="-1" step="0.01">
+                <span id="yellowVelValue" class="slider-value">-1.00</span>
+            </div>
         </form>
     </div>
     <canvas id="simCanvas" width="600" height="400"></canvas>
     <script>
-        const form = document.getElementById('massForm');
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
         const massBlueSlider = document.getElementById('massBlue');
         const massYellowSlider = document.getElementById('massYellow');
         const blueValue = document.getElementById('blueValue');
         const yellowValue = document.getElementById('yellowValue');
+        const blueVelSlider = document.getElementById('velBlue');
+        const yellowVelSlider = document.getElementById('velYellow');
+        const blueVelValue = document.getElementById('blueVelValue');
+        const yellowVelValue = document.getElementById('yellowVelValue');
         let massBlue = parseFloat(massBlueSlider.value);
         let massYellow = parseFloat(massYellowSlider.value);
+        let velBlue = parseFloat(blueVelSlider.value);
+        let velYellow = parseFloat(yellowVelSlider.value);
 
-        // Update slider values live
+        // Trajectory data
+        let simData = null;
+        let frame = 0;
+        let nFrames = 1;
+
+        async function fetchSimulation() {
+            massBlue = parseFloat(massBlueSlider.value);
+            massYellow = parseFloat(massYellowSlider.value);
+            velBlue = parseFloat(blueVelSlider.value);
+            velYellow = parseFloat(yellowVelSlider.value);
+            const response = await fetch('/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ masses: [massBlue, massYellow], velocities: [velBlue, velYellow] })
+            });
+            simData = await response.json();
+            frame = 0;
+            nFrames = simData.t.length;
+        }
+
+        // Attach fetchSimulation to all slider inputs
         massBlueSlider.oninput = () => {
             blueValue.textContent = massBlueSlider.value;
+            fetchSimulation();
         };
         massYellowSlider.oninput = () => {
             yellowValue.textContent = massYellowSlider.value;
+            fetchSimulation();
+        };
+        blueVelSlider.oninput = () => {
+            blueVelValue.textContent = parseFloat(blueVelSlider.value).toFixed(2);
+            fetchSimulation();
+        };
+        yellowVelSlider.oninput = () => {
+            yellowVelValue.textContent = parseFloat(yellowVelSlider.value).toFixed(2);
+            fetchSimulation();
         };
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            massBlue = parseFloat(massBlueSlider.value);
-            massYellow = parseFloat(massYellowSlider.value);
-            // Optionally send to backend
-            await fetch('/simulate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ masses: [massBlue, massYellow] })
-            });
-        };
-
-        // Simple 2-body orbit simulation (circular for demo)
-        let angle = 0;
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Center of mass
-            let totalMass = massBlue + massYellow;
-            let rBlue = 100 * massYellow / totalMass;
-            let rYellow = 100 * massBlue / totalMass;
-            let cx = canvas.width / 2;
-            let cy = canvas.height / 2;
-            // Positions
-            let xBlue = cx + rBlue * Math.cos(angle);
-            let yBlue = cy + rBlue * Math.sin(angle);
-            let xYellow = cx - rYellow * Math.cos(angle);
-            let yYellow = cy - rYellow * Math.sin(angle);
-            // Draw Blue planet
-            ctx.beginPath();
-            ctx.arc(xBlue, yBlue, 20, 0, 2 * Math.PI);
-            ctx.fillStyle = '#1E90FF';
-            let x1 = cx + r1 * Math.cos(angle);
-            let y1 = cy + r1 * Math.sin(angle);
-            let x2 = cx - r2 * Math.cos(angle);
-            let y2 = cy - r2 * Math.sin(angle);
-            // Draw planets
-            ctx.beginPath();
-            ctx.arc(x1, y1, 20, 0, 2 * Math.PI);
-            ctx.fillStyle = '#FFD700';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(x2, y2, 20, 0, 2 * Math.PI);
-            ctx.fillStyle = '#1E90FF';
-            ctx.fill();
-            // Draw orbits
-            ctx.beginPath();
-            ctx.arc(cx, cy, r1, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#FFD70044';
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx, cy, r2, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#1E90FF44';
-            ctx.stroke();
-            // Update angle
-            angle += 0.01 * Math.sqrt((mass1 + mass2) / totalMass);
+            if (simData) {
+                // Center the system in the canvas
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                // Get positions for this frame
+                const x1 = simData.x1[frame];
+                const y1 = simData.y1[frame];
+                const x2 = simData.x2[frame];
+                const y2 = simData.y2[frame];
+                // Calculate radii based on mass (sqrt for visibility, clamp between 10 and 40)
+                let blueRadius = Math.max(10, Math.min(40, Math.sqrt(massBlue) * 2));
+                let yellowRadius = Math.max(10, Math.min(40, Math.sqrt(massYellow) * 2));
+                // Draw Blue planet
+                ctx.beginPath();
+                ctx.arc(cx + x1, cy + y1, blueRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1E90FF';
+                ctx.fill();
+                // Draw Yellow planet
+                ctx.beginPath();
+                ctx.arc(cx + x2, cy + y2, yellowRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FFD700';
+                ctx.fill();
+                // Optionally: draw velocity vectors
+                /*
+                ctx.beginPath();
+                ctx.moveTo(cx + x1, cy + y1);
+                ctx.lineTo(cx + x1 + simData.vx1[frame]*5, cy + y1 + simData.vy1[frame]*5);
+                ctx.strokeStyle = '#1E90FF';
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx + x2, cy + y2);
+                ctx.lineTo(cx + x2 + simData.vx2[frame]*5, cy + y2 + simData.vy2[frame]*5);
+                ctx.strokeStyle = '#FFD700';
+                ctx.stroke();
+                */
+                // Advance frame
+                frame = (frame + 1) % nFrames;
+            }
             requestAnimationFrame(draw);
         }
+
+        // Initial fetch and start animation
+        fetchSimulation();
         draw();
     </script>
 </body>
