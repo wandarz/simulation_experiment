@@ -2,188 +2,360 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Planetary Simulation</title>
+    <title>Multi-Planet Simulation</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        #controls { margin-bottom: 20px; text-align: center; }
-        .slider-label { display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .controls-panel {
+            min-width: 350px;
+            max-width: 400px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            height: fit-content;
+        }
+        .simulation-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .planet-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .planet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .planet-title {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .remove-planet {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .remove-planet:hover {
+            background: #cc0000;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 13px;
+        }
         .color-dot {
             display: inline-block;
             width: 16px;
             height: 16px;
             border-radius: 50%;
             margin-right: 8px;
+            border: 2px solid #333;
         }
-        .blue-dot { background: #1E90FF; }
-        .yellow-dot { background: #FFD700; }
-        .slider-value { width: 40px; display: inline-block; text-align: left; margin-left: 8px; }
-        canvas { background: #000; display: block; margin: 0 auto; }
+        .slider-value {
+            width: 50px;
+            display: inline-block;
+            text-align: right;
+            margin-left: 8px;
+            font-size: 12px;
+        }
+        .velocity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .compass-container {
+            position: relative;
+        }
+        canvas { 
+            background: #000; 
+            display: block; 
+            margin: 0 auto;
+            border-radius: 8px;
+        }
+        .add-planet-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .add-planet-btn:hover {
+            background: #45a049;
+        }
+        .global-controls {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .zoom-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .zoom-btn:hover {
+            background: #1976D2;
+        }
+        .zoom-label {
+            color: #333;
+            font-size: 14px;
+        }
+        .reset-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+        }
+        .reset-btn:hover {
+            background: #f57c00;
+        }
+        .graphs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .graph {
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .planet-count {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
-    <div style="display: flex; flex-direction: row; justify-content: flex-start; align-items: flex-start;">
-        <div id="controls" style="min-width: 350px; max-width: 400px; margin-right: 30px; text-align: left; background: #f5f5f5; border-radius: 12px; box-shadow: 0 2px 8px #0002; padding: 28px 28px 18px 28px; margin-top: 10px; color: #222;">
-            <form id="massForm">
+    <div class="main-container">
+        <div class="controls-panel">
+            <div class="planet-count">
+                Planets: <span id="planetCount">2</span>
+            </div>
+            
+            <div class="global-controls">
                 <div class="slider-label">
                     <label for="simTime">Simulation Time (s):</label>
                     <input type="range" id="simTime" min="1" max="10000" value="20">
                     <span id="simTimeValue" class="slider-value">20</span>
                 </div>
-                <div class="slider-label">
-                    <span class="color-dot blue-dot"></span>
-                    <label for="massBlue">Blue Mass:</label>
-                    <input type="range" id="massBlue" min="1" max="1000" value="5">
-                    <span id="blueValue" class="slider-value">5</span>
+                <div class="zoom-controls">
+                    <button id="zoomOutBtn" class="zoom-btn">-</button>
+                    <button id="zoomInBtn" class="zoom-btn">+</button>
+                    <span id="zoomLevelLabel" class="zoom-label">Zoom: 1x</span>
                 </div>
-                <div class="slider-label">
-                    <span class="color-dot yellow-dot"></span>
-                    <label for="massYellow">Yellow Mass:</label>
-                    <input type="range" id="massYellow" min="1" max="1000" value="5">
-                    <span id="yellowValue" class="slider-value">5</span>
+                <div style="margin-top: 15px;">
+                    <button id="resetBtn" class="reset-btn">Reset Simulation</button>
                 </div>
-                <div class="slider-label">
-                    <span class="color-dot blue-dot"></span>
-                    <label for="velBlue">Blue Initial Velocity:</label>
-                    <input type="range" id="velBlue" min="0" max="5" value="1" step="0.01">
-                    <span id="blueVelValue" class="slider-value">1.00</span>
-                    <span style="margin-left:20px;">Direction:</span>
-                    <canvas id="compassBlue" width="60" height="60" style="background:#222; border-radius:50%; margin-left:10px; cursor:pointer;"></canvas>
-                    <span id="blueAngleValue" class="slider-value">90</span>
-                </div>
-                <div class="slider-label">
-                    <span class="color-dot yellow-dot"></span>
-                    <label for="velYellow">Yellow Initial Velocity:</label>
-                    <input type="range" id="velYellow" min="0" max="5" value="1" step="0.01">
-                    <span id="yellowVelValue" class="slider-value">1.00</span>
-                    <span style="margin-left:20px;">Direction:</span>
-                    <canvas id="compassYellow" width="60" height="60" style="background:#222; border-radius:50%; margin-left:10px; cursor:pointer;"></canvas>
-                    <span id="yellowAngleValue" class="slider-value">270</span>
-                </div>
-            </form>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-            <div style="width:600px; display: flex; flex-direction: row; align-items: center; margin-bottom: 4px;">
-                <button id="zoomOutBtn" style="margin-right: 8px;">-</button>
-                <button id="zoomInBtn" style="margin-right: 16px;">+</button>
-                <span id="zoomLevelLabel" style="color:#333; font-size: 15px;">Zoom: 1x</span>
             </div>
-            <canvas id="simCanvas" width="600" height="400" style="margin-bottom: 10px;"></canvas>
-            <div style="width:600px;">
-                <div id="distanceGraphPlotly" style="width:600px; height:180px; background:#111; margin-top:10px;"></div>
-                <div id="vxGraphPlotly" style="width:600px; height:140px; background:#111; margin-top:18px;"></div>
-                <div id="vyGraphPlotly" style="width:600px; height:140px; background:#111; margin-top:18px;"></div>
+            
+            <div id="planetsContainer">
+                <!-- Planet controls will be dynamically added here -->
+            </div>
+            
+            <button id="addPlanetBtn" class="add-planet-btn">+ Add New Planet</button>
+        </div>
+        
+        <div class="simulation-panel">
+            <canvas id="simCanvas" width="800" height="600"></canvas>
+            <div class="graphs-container">
+                <div id="distanceGraphPlotly" class="graph" style="height:200px;"></div>
+                <div id="vxGraphPlotly" class="graph" style="height:150px;"></div>
+                <div id="vyGraphPlotly" class="graph" style="height:150px;"></div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
-        const massBlueSlider = document.getElementById('massBlue');
-        const massYellowSlider = document.getElementById('massYellow');
-        const blueValue = document.getElementById('blueValue');
-        const yellowValue = document.getElementById('yellowValue');
-        const blueVelSlider = document.getElementById('velBlue');
-        const yellowVelSlider = document.getElementById('velYellow');
-        const blueVelValue = document.getElementById('blueVelValue');
-        const yellowVelValue = document.getElementById('yellowVelValue');
-        const simTimeSlider = document.getElementById('simTime');
-        const simTimeValue = document.getElementById('simTimeValue');
-        const compassBlue = document.getElementById('compassBlue');
-        const compassYellow = document.getElementById('compassYellow');
-        const blueAngleValue = document.getElementById('blueAngleValue');
-        const yellowAngleValue = document.getElementById('yellowAngleValue');
-        const distanceGraphDiv = document.getElementById('distanceGraphPlotly');
-        const vxGraphDiv = document.getElementById('vxGraphPlotly');
-        const vyGraphDiv = document.getElementById('vyGraphPlotly');
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
-        const zoomLevelLabel = document.getElementById('zoomLevelLabel');
-        let massBlue = parseFloat(massBlueSlider.value);
-        let massYellow = parseFloat(massYellowSlider.value);
-        let velBlue = parseFloat(blueVelSlider.value);
-        let velYellow = parseFloat(yellowVelSlider.value);
-        let simTime = parseFloat(simTimeSlider.value);
-        let angleBlue = 90;
-        let angleYellow = 270;
-        let zoom = 1;
-        const minZoom = 0.2;
-        const maxZoom = 5;
 
-        // Trajectory data
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        // Global variables
+        let planets = [
+            { mass: 5, velocity: 1, velocity_angle: 90, color: '#1E90FF' },
+            { mass: 5, velocity: 1, velocity_angle: 270, color: '#FFD700', initial_distance: 100 }
+        ];
         let simData = null;
         let frame = 0;
         let nFrames = 1;
+        let zoom = 1;
+        const minZoom = 0.2;
+        const maxZoom = 5;
+        let trails = [];
+        let plotlyInitialized = false;
+        let plotlyVxInitialized = false;
+        let plotlyVyInitialized = false;
 
-        async function fetchSimulation() {
-            massBlue = parseFloat(massBlueSlider.value);
-            massYellow = parseFloat(massYellowSlider.value);
-            velBlue = parseFloat(blueVelSlider.value);
-            velYellow = parseFloat(yellowVelSlider.value);
-            simTime = parseFloat(simTimeSlider.value);
-            const response = await fetch('/simulate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    masses: [massBlue, massYellow],
-                    velocities: [velBlue, velYellow],
-                    velocity_angles: [angleBlue, angleYellow],
-                    time_interval: simTime
-                })
+        // DOM elements
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const planetsContainer = document.getElementById('planetsContainer');
+        const addPlanetBtn = document.getElementById('addPlanetBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const planetCountSpan = document.getElementById('planetCount');
+        const simTimeSlider = document.getElementById('simTime');
+        const simTimeValue = document.getElementById('simTimeValue');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const zoomLevelLabel = document.getElementById('zoomLevelLabel');
+        const distanceGraphDiv = document.getElementById('distanceGraphPlotly');
+        const vxGraphDiv = document.getElementById('vxGraphPlotly');
+        const vyGraphDiv = document.getElementById('vyGraphPlotly');
+
+        // Color palette for new planets
+        const planetColors = [
+            '#1E90FF', '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1',
+            '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
+        ];
+
+        // Initialize
+        function init() {
+            updatePlanetCount();
+            renderPlanetControls();
+            setupEventListeners();
+            fetchSimulation();
+            startAnimation();
+        }
+
+        function updatePlanetCount() {
+            planetCountSpan.textContent = planets.length;
+        }
+
+        function renderPlanetControls() {
+            planetsContainer.innerHTML = '';
+            planets.forEach((planet, index) => {
+                const planetDiv = createPlanetControl(planet, index);
+                planetsContainer.appendChild(planetDiv);
             });
-            simData = await response.json();
-            frame = 0;
-            nFrames = simData.t.length;
-            blueTrail = [];
-            yellowTrail = [];
         }
 
-        // Attach fetchSimulation to all slider inputs
-        massBlueSlider.oninput = () => {
-            blueValue.textContent = massBlueSlider.value;
-            fetchSimulation();
-        };
-        massYellowSlider.oninput = () => {
-            yellowValue.textContent = massYellowSlider.value;
-            fetchSimulation();
-        };
-        blueVelSlider.oninput = () => {
-            blueVelValue.textContent = parseFloat(blueVelSlider.value).toFixed(2);
-            fetchSimulation();
-        };
-        yellowVelSlider.oninput = () => {
-            yellowVelValue.textContent = parseFloat(yellowVelSlider.value).toFixed(2);
-            fetchSimulation();
-        };
-        simTimeSlider.oninput = () => {
-            simTimeValue.textContent = simTimeSlider.value;
-            fetchSimulation();
-        };
-
-        // Compass rose/arrow widget logic
-        function drawCompass(compass, angle, color) {
-            const ctx = compass.getContext('2d');
-            ctx.clearRect(0, 0, 60, 60);
-            ctx.save();
-            ctx.translate(30, 30);
-            ctx.strokeStyle = '#888';
-            ctx.beginPath();
-            ctx.arc(0, 0, 28, 0, 2 * Math.PI);
-            ctx.stroke();
-            // Draw arrow
-            ctx.rotate((angle-90) * Math.PI / 180);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -22);
-            ctx.lineTo(-5, -14);
-            ctx.moveTo(0, -22);
-            ctx.lineTo(5, -14);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.restore();
+        function createPlanetControl(planet, index) {
+            const div = document.createElement('div');
+            div.className = 'planet-controls';
+            div.innerHTML = `
+                <div class="planet-header">
+                    <span class="planet-title">Planet ${index + 1}</span>
+                    ${planets.length > 1 ? `<button class="remove-planet" onclick="removePlanet(${index})">Remove</button>` : ''}
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="color-dot" style="background: ${planet.color}"></span>
+                        <label for="mass${index}">Mass:</label>
+                        <input type="range" id="mass${index}" min="1" max="1000" value="${planet.mass}" oninput="updatePlanet(${index}, 'mass', this.value)">
+                        <span id="massValue${index}" class="slider-value">${planet.mass}</span>
+                    </div>
+                    <div class="slider-label">
+                        <span class="color-dot" style="background: ${planet.color}"></span>
+                        <label for="velocity${index}">Velocity:</label>
+                        <input type="range" id="velocity${index}" min="0" max="5" value="${planet.velocity}" step="0.01" oninput="updatePlanet(${index}, 'velocity', this.value)">
+                        <span id="velocityValue${index}" class="slider-value">${planet.velocity.toFixed(2)}</span>
+                    </div>
+                    <div class="slider-label">
+                        <span class="color-dot" style="background: ${planet.color}"></span>
+                        <label for="angle${index}">Direction:</label>
+                        <div class="velocity-controls">
+                            <div class="compass-container">
+                                <canvas id="compass${index}" width="60" height="60" style="background:#222; border-radius:50%; cursor:pointer;"></canvas>
+                            </div>
+                            <span id="angleValue${index}" class="slider-value">${planet.velocity_angle}°</span>
+                        </div>
+                    </div>
+                    ${index > 0 ? `
+                    <div class="slider-label">
+                        <span class="color-dot" style="background: ${planet.color}"></span>
+                        <label for="distance${index}">Distance from Planet 1:</label>
+                        <input type="range" id="distance${index}" min="50" max="300" value="${planet.initial_distance || 100}" oninput="updatePlanet(${index}, 'initial_distance', this.value)">
+                        <span id="distanceValue${index}" class="slider-value">${(planet.initial_distance || 100).toFixed(0)}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Setup compass after DOM is created
+            setTimeout(() => {
+                setupCompass(index, planet.velocity_angle, planet.color);
+            }, 0);
+            
+            return div;
         }
-        function setupCompass(compass, getAngle, setAngle, color, angleValueElem) {
+
+        function setupCompass(index, angle, color) {
+            const compass = document.getElementById(`compass${index}`);
+            const angleValue = document.getElementById(`angleValue${index}`);
+            
+            function drawCompass(compass, angle, color) {
+                const ctx = compass.getContext('2d');
+                ctx.clearRect(0, 0, 60, 60);
+                ctx.save();
+                ctx.translate(30, 30);
+                ctx.strokeStyle = '#888';
+                ctx.beginPath();
+                ctx.arc(0, 0, 28, 0, 2 * Math.PI);
+                ctx.stroke();
+                
+                ctx.rotate((angle-90) * Math.PI / 180);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -22);
+                ctx.lineTo(-5, -14);
+                ctx.moveTo(0, -22);
+                ctx.lineTo(5, -14);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+            
             let dragging = false;
             compass.addEventListener('mousedown', (e) => {
                 dragging = true;
@@ -193,240 +365,228 @@
                 if (dragging) updateAngle(e);
             });
             window.addEventListener('mouseup', () => {
-                if (dragging) { dragging = false; fetchSimulation(); }
+                if (dragging) { 
+                    dragging = false; 
+                    fetchSimulation(); 
+                }
             });
+            
             function updateAngle(e) {
                 const rect = compass.getBoundingClientRect();
                 const x = e.clientX - rect.left - 30;
                 const y = e.clientY - rect.top - 30;
                 let ang = Math.atan2(y, x) * 180 / Math.PI;
-                ang = (ang + 450) % 360; // 0 is up
-                setAngle(ang);
-                angleValueElem.textContent = Math.round(ang);
+                ang = (ang + 450) % 360;
+                planets[index].velocity_angle = ang;
+                angleValue.textContent = Math.round(ang) + '°';
                 drawCompass(compass, ang, color);
             }
-            drawCompass(compass, getAngle(), color);
+            
+            drawCompass(compass, angle, color);
         }
-        setupCompass(compassBlue, () => angleBlue, a => { angleBlue = a; }, '#1E90FF', blueAngleValue);
-        setupCompass(compassYellow, () => angleYellow, a => { angleYellow = a; }, '#FFD700', yellowAngleValue);
 
-        // Trails
-        let blueTrail = [];
-        let yellowTrail = [];
-        let distanceHistory = [];
-        let vx1History = [], vy1History = [], vx2History = [], vy2History = [];
-        let plotlyInitialized = false;
-        let plotlyVxInitialized = false;
-        let plotlyVyInitialized = false;
-        zoomInBtn.onclick = () => { zoom = Math.min(maxZoom, zoom * 1.2); updateZoomLabel(); };
-        zoomOutBtn.onclick = () => { zoom = Math.max(minZoom, zoom / 1.2); updateZoomLabel(); };
+        function updatePlanet(index, property, value) {
+            planets[index][property] = parseFloat(value);
+            
+            // Update display
+            const valueElement = document.getElementById(`${property}Value${index}`);
+            if (valueElement) {
+                if (property === 'velocity') {
+                    valueElement.textContent = parseFloat(value).toFixed(2);
+                } else if (property === 'initial_distance') {
+                    valueElement.textContent = parseFloat(value).toFixed(0);
+                } else {
+                    valueElement.textContent = value;
+                }
+            }
+            
+            fetchSimulation();
+        }
+
+        function addPlanet() {
+            const newColor = planetColors[planets.length % planetColors.length];
+            planets.push({
+                mass: 5,
+                velocity: 1,
+                velocity_angle: 0,
+                color: newColor,
+                initial_distance: 100
+            });
+            
+            updatePlanetCount();
+            renderPlanetControls();
+            fetchSimulation();
+        }
+
+        function removePlanet(index) {
+            if (planets.length > 1) {
+                planets.splice(index, 1);
+                updatePlanetCount();
+                renderPlanetControls();
+                fetchSimulation();
+            }
+        }
+
+        function resetSimulation() {
+            // Reset planets to initial state
+            planets = [
+                { mass: 5, velocity: 1, velocity_angle: 90, color: '#1E90FF' },
+                { mass: 5, velocity: 1, velocity_angle: 270, color: '#FFD700', initial_distance: 100 }
+            ];
+            
+            // Reset simulation time to default
+            simTimeSlider.value = 20;
+            simTimeValue.textContent = '20';
+            
+            // Reset zoom to default
+            zoom = 1;
+            updateZoomLabel();
+            
+            // Reset frame and trails
+            frame = 0;
+            trails = [];
+            
+            // Reset graph states
+            plotlyInitialized = false;
+            plotlyVxInitialized = false;
+            plotlyVyInitialized = false;
+            
+            // Update UI and restart simulation
+            updatePlanetCount();
+            renderPlanetControls();
+            fetchSimulation();
+        }
+
+        function setupEventListeners() {
+            addPlanetBtn.addEventListener('click', addPlanet);
+            resetBtn.addEventListener('click', resetSimulation);
+            
+            simTimeSlider.addEventListener('input', () => {
+                simTimeValue.textContent = simTimeSlider.value;
+                fetchSimulation();
+            });
+            
+            zoomInBtn.addEventListener('click', () => {
+                zoom = Math.min(maxZoom, zoom * 1.2);
+                updateZoomLabel();
+            });
+            
+            zoomOutBtn.addEventListener('click', () => {
+                zoom = Math.max(minZoom, zoom / 1.2);
+                updateZoomLabel();
+            });
+            
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.deltaY < 0) zoom = Math.min(maxZoom, zoom * 1.1);
+                else zoom = Math.max(minZoom, zoom / 1.1);
+                updateZoomLabel();
+            });
+        }
+
         function updateZoomLabel() {
             zoomLevelLabel.textContent = `Zoom: ${zoom.toFixed(2)}x`;
         }
-        updateZoomLabel();
-        // Mouse wheel zoom
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            if (e.deltaY < 0) zoom = Math.min(maxZoom, zoom * 1.1);
-            else zoom = Math.max(minZoom, zoom / 1.1);
-            updateZoomLabel();
-        });
+
+        async function fetchSimulation() {
+            const response = await fetch('/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    planets: planets,
+                    time_interval: parseFloat(simTimeSlider.value)
+                })
+            });
+            
+            if (response.ok) {
+                simData = await response.json();
+                frame = 0;
+                nFrames = simData.t.length;
+                trails = planets.map(() => []);
+                plotlyInitialized = false;
+                plotlyVxInitialized = false;
+                plotlyVyInitialized = false;
+            } else {
+                console.error('Simulation failed:', await response.text());
+            }
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (simData) {
-                // Center and zoom
+            
+            if (simData && simData.planets) {
                 const cx = canvas.width / 2;
                 const cy = canvas.height / 2;
+                
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.scale(zoom, zoom);
                 ctx.translate(-cx, -cy);
-                const x1 = simData.x1[frame];
-                const y1 = simData.y1[frame];
-                const x2 = simData.x2[frame];
-                const y2 = simData.y2[frame];
-                let blueRadius = Math.max(10, Math.min(40, Math.sqrt(massBlue) * 2));
-                let yellowRadius = Math.max(10, Math.min(40, Math.sqrt(massYellow) * 2));
-                // Add to trails (persist for whole simulation)
-                if (frame === 0) {
-                    blueTrail = [];
-                    yellowTrail = [];
-                    distanceHistory = [];
-                    vx1History = [];
-                    vy1History = [];
-                    vx2History = [];
-                    vy2History = [];
-                    plotlyInitialized = false;
-                    plotlyVxInitialized = false;
-                    plotlyVyInitialized = false;
-                }
-                blueTrail.push([cx + x1, cy + y1]);
-                yellowTrail.push([cx + x2, cy + y2]);
+                
                 // Draw trails
-                ctx.beginPath();
-                for (let i = 0; i < blueTrail.length; i++) {
-                    const [x, y] = blueTrail[i];
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                simData.planets.forEach((planet, index) => {
+                    if (frame === 0) {
+                        trails[index] = [];
+                    }
+                    
+                    const x = planet.x[frame];
+                    const y = planet.y[frame];
+                    trails[index].push([cx + x, cy + y]);
+                    
+                    // Draw trail
+                    if (trails[index].length > 1) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = planet.color + '88';
+                        ctx.lineWidth = 2 / zoom;
+                        trails[index].forEach((pos, i) => {
+                            if (i === 0) ctx.moveTo(pos[0], pos[1]);
+                            else ctx.lineTo(pos[0], pos[1]);
+                        });
+                        ctx.stroke();
+                    }
+                    
+                    // Draw planet
+                    const radius = Math.max(8, Math.min(30, Math.sqrt(planet.mass) * 1.5));
+                    ctx.beginPath();
+                    ctx.arc(cx + x, cy + y, radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = planet.color;
+                    ctx.fill();
+                });
+                
+                // Draw distance indicators from Planet 1 to other planets
+                if (simData.planets.length > 1) {
+                    const planet1 = simData.planets[0];
+                    const x1 = planet1.x[frame];
+                    const y1 = planet1.y[frame];
+                    
+                    simData.planets.slice(1).forEach((planet, index) => {
+                        const x2 = planet.x[frame];
+                        const y2 = planet.y[frame];
+                        const distance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                        
+                        // Draw connecting line
+                        ctx.beginPath();
+                        ctx.moveTo(cx + x1, cy + y1);
+                        ctx.lineTo(cx + x2, cy + y2);
+                        ctx.strokeStyle = planet.color + '44';
+                        ctx.lineWidth = 1 / zoom;
+                        ctx.setLineDash([5 / zoom, 5 / zoom]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        // Draw distance label
+                        const midX = (x1 + x2) / 2;
+                        const midY = (y1 + y2) / 2;
+                        ctx.save();
+                        ctx.font = `${12 / zoom}px Arial`;
+                        ctx.fillStyle = planet.color;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`${distance.toFixed(1)}`, cx + midX, cy + midY - 10 / zoom);
+                        ctx.restore();
+                    });
                 }
-                ctx.strokeStyle = '#1E90FF88';
-                ctx.lineWidth = 2 / zoom;
-                ctx.stroke();
-                ctx.beginPath();
-                for (let i = 0; i < yellowTrail.length; i++) {
-                    const [x, y] = yellowTrail[i];
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.strokeStyle = '#FFD70088';
-                ctx.lineWidth = 2 / zoom;
-                ctx.stroke();
-                // Draw Blue planet
-                ctx.beginPath();
-                ctx.arc(cx + x1, cy + y1, blueRadius, 0, 2 * Math.PI);
-                ctx.fillStyle = '#1E90FF';
-                ctx.fill();
-                // Draw Yellow planet
-                ctx.beginPath();
-                ctx.arc(cx + x2, cy + y2, yellowRadius, 0, 2 * Math.PI);
-                ctx.fillStyle = '#FFD700';
-                ctx.fill();
-                // Update distance and velocity histories
-                let dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-                distanceHistory.push(dist);
-                vx1History.push(simData.vx1[frame]);
-                vy1History.push(simData.vy1[frame]);
-                vx2History.push(simData.vx2[frame]);
-                vy2History.push(simData.vy2[frame]);
-                // Draw Plotly distance graph
-                let t = simData.t.slice(0, distanceHistory.length);
-                let trace = {
-                    x: t,
-                    y: distanceHistory,
-                    mode: 'lines',
-                    line: {color: '#1f77b4', width: 3},
-                    name: 'Distance',
-                };
-                let layout = {
-                    paper_bgcolor: '#111',
-                    plot_bgcolor: '#111',
-                    margin: {l: 50, r: 20, t: 20, b: 40},
-                    xaxis: {
-                        title: 'Time (s)',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                        range: [0, simData.t[simData.t.length-1]],
-                    },
-                    yaxis: {
-                        title: 'Distance',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                    },
-                    font: {color: '#fff'},
-                };
-                if (!plotlyInitialized) {
-                    Plotly.newPlot(distanceGraphDiv, [trace], layout, {displayModeBar: false});
-                    plotlyInitialized = true;
-                } else {
-                    Plotly.update(distanceGraphDiv, {x: [t], y: [distanceHistory]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
-                }
-                // Draw Plotly vx graph
-                let traceVx1 = {
-                    x: t, y: vx1History, mode: 'lines', line: {color: '#1f77b4', width: 2}, name: 'Blue vx',
-                };
-                let traceVx2 = {
-                    x: t, y: vx2History, mode: 'lines', line: {color: '#FFD700', width: 2}, name: 'Yellow vx',
-                };
-                let layoutVx = {
-                    paper_bgcolor: '#111',
-                    plot_bgcolor: '#111',
-                    margin: {l: 50, r: 20, t: 20, b: 40},
-                    xaxis: {
-                        title: 'Time (s)',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                        range: [0, simData.t[simData.t.length-1]],
-                    },
-                    yaxis: {
-                        title: 'vx',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                    },
-                    font: {color: '#fff'},
-                    legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}},
-                };
-                if (!plotlyVxInitialized) {
-                    Plotly.newPlot(vxGraphDiv, [traceVx1, traceVx2], layoutVx, {displayModeBar: false});
-                    plotlyVxInitialized = true;
-                } else {
-                    Plotly.update(vxGraphDiv, {x: [t, t], y: [vx1History, vx2History]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
-                }
-                // Draw Plotly vy graph
-                let traceVy1 = {
-                    x: t, y: vy1History, mode: 'lines', line: {color: '#1f77b4', width: 2}, name: 'Blue vy',
-                };
-                let traceVy2 = {
-                    x: t, y: vy2History, mode: 'lines', line: {color: '#FFD700', width: 2}, name: 'Yellow vy',
-                };
-                let layoutVy = {
-                    paper_bgcolor: '#111',
-                    plot_bgcolor: '#111',
-                    margin: {l: 50, r: 20, t: 20, b: 40},
-                    xaxis: {
-                        title: 'Time (s)',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                        range: [0, simData.t[simData.t.length-1]],
-                    },
-                    yaxis: {
-                        title: 'vy',
-                        color: '#fff',
-                        gridcolor: '#444',
-                        tickcolor: '#fff',
-                        zeroline: false,
-                        showgrid: true,
-                        showline: true,
-                        linecolor: '#888',
-                        tickfont: {color: '#fff'},
-                    },
-                    font: {color: '#fff'},
-                    legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}},
-                };
-                if (!plotlyVyInitialized) {
-                    Plotly.newPlot(vyGraphDiv, [traceVy1, traceVy2], layoutVy, {displayModeBar: false});
-                    plotlyVyInitialized = true;
-                } else {
-                    Plotly.update(vyGraphDiv, {x: [t, t], y: [vy1History, vy2History]}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
-                }
-                // Draw scale indicator (100 units)
+                
+                // Draw scale indicator
                 ctx.save();
                 ctx.strokeStyle = '#333';
                 ctx.lineWidth = 2;
@@ -438,16 +598,157 @@
                 ctx.fillStyle = '#333';
                 ctx.fillText(`${Math.round(100 / zoom)} units`, 60, canvas.height - 38);
                 ctx.restore();
-                // Advance frame
-                frame = (frame + 1) % nFrames;
+                
                 ctx.restore();
+                
+                // Update graphs
+                updateGraphs();
+                
+                frame = (frame + 1) % nFrames;
             }
+            
             requestAnimationFrame(draw);
         }
 
-        // Initial fetch and start animation
-        fetchSimulation();
-        draw();
+        function updateGraphs() {
+            if (!simData || !simData.planets || simData.planets.length < 2) return;
+            
+            const t = simData.t.slice(0, frame + 1);
+            
+            // Distance graph (from each planet to Planet 1)
+            const distanceTraces = [];
+            
+            simData.planets.slice(1).forEach((planet, index) => {
+                const planet1 = simData.planets[0];
+                const distances = [];
+                
+                for (let i = 0; i <= frame; i++) {
+                    const dx = planet.x[i] - planet1.x[i];
+                    const dy = planet.y[i] - planet1.y[i];
+                    distances.push(Math.sqrt(dx*dx + dy*dy));
+                }
+                
+                distanceTraces.push({
+                    x: t,
+                    y: distances,
+                    mode: 'lines',
+                    line: {color: planet.color, width: 2},
+                    name: `Planet ${index + 2} to Planet 1`
+                });
+            });
+            
+            const distanceLayout = {
+                paper_bgcolor: '#111',
+                plot_bgcolor: '#111',
+                margin: {l: 50, r: 20, t: 20, b: 40},
+                xaxis: {
+                    title: 'Time (s)',
+                    color: '#fff',
+                    gridcolor: '#444',
+                    tickcolor: '#fff',
+                    zeroline: false,
+                    showgrid: true,
+                    showline: true,
+                    linecolor: '#888',
+                    tickfont: {color: '#fff'},
+                    range: [0, simData.t[simData.t.length-1]]
+                },
+                yaxis: {
+                    title: 'Distance to Planet 1',
+                    color: '#fff',
+                    gridcolor: '#444',
+                    tickcolor: '#fff',
+                    zeroline: false,
+                    showgrid: true,
+                    showline: true,
+                    linecolor: '#888',
+                    tickfont: {color: '#fff'}
+                },
+                font: {color: '#fff'},
+                legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}}
+            };
+            
+            if (!plotlyInitialized) {
+                Plotly.newPlot(distanceGraphDiv, distanceTraces, distanceLayout, {displayModeBar: false});
+                plotlyInitialized = true;
+            } else {
+                Plotly.update(distanceGraphDiv, {x: distanceTraces.map(t => t.x), y: distanceTraces.map(t => t.y)}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+            }
+            
+            // Velocity graphs
+            const vxTraces = [];
+            const vyTraces = [];
+            
+            simData.planets.forEach((planet, index) => {
+                vxTraces.push({
+                    x: t,
+                    y: planet.vx.slice(0, frame + 1),
+                    mode: 'lines',
+                    line: {color: planet.color, width: 2},
+                    name: `Planet ${index + 1} vx`
+                });
+                
+                vyTraces.push({
+                    x: t,
+                    y: planet.vy.slice(0, frame + 1),
+                    mode: 'lines',
+                    line: {color: planet.color, width: 2},
+                    name: `Planet ${index + 1} vy`
+                });
+            });
+            
+            const velocityLayout = {
+                paper_bgcolor: '#111',
+                plot_bgcolor: '#111',
+                margin: {l: 50, r: 20, t: 20, b: 40},
+                xaxis: {
+                    title: 'Time (s)',
+                    color: '#fff',
+                    gridcolor: '#444',
+                    tickcolor: '#fff',
+                    zeroline: false,
+                    showgrid: true,
+                    showline: true,
+                    linecolor: '#888',
+                    tickfont: {color: '#fff'},
+                    range: [0, simData.t[simData.t.length-1]]
+                },
+                yaxis: {
+                    color: '#fff',
+                    gridcolor: '#444',
+                    tickcolor: '#fff',
+                    zeroline: false,
+                    showgrid: true,
+                    showline: true,
+                    linecolor: '#888',
+                    tickfont: {color: '#fff'}
+                },
+                font: {color: '#fff'},
+                legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {color: '#fff'}}
+            };
+            
+            if (!plotlyVxInitialized) {
+                Plotly.newPlot(vxGraphDiv, vxTraces, {...velocityLayout, yaxis: {...velocityLayout.yaxis, title: 'vx'}}, {displayModeBar: false});
+                plotlyVxInitialized = true;
+            } else {
+                Plotly.update(vxGraphDiv, {x: vxTraces.map(t => t.x), y: vxTraces.map(t => t.y)}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+            }
+            
+            if (!plotlyVyInitialized) {
+                Plotly.newPlot(vyGraphDiv, vyTraces, {...velocityLayout, yaxis: {...velocityLayout.yaxis, title: 'vy'}}, {displayModeBar: false});
+                plotlyVyInitialized = true;
+            } else {
+                Plotly.update(vyGraphDiv, {x: vyTraces.map(t => t.x), y: vyTraces.map(t => t.y)}, {xaxis: {range: [0, simData.t[simData.t.length-1]]}});
+            }
+        }
+
+        function startAnimation() {
+            updateZoomLabel();
+            draw();
+        }
+
+        // Initialize the application
+        init();
     </script>
 </body>
 </html> 
